@@ -11,7 +11,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	server, err := net.Listen("tcp", "127.0.0.1:8300")
+	server, err := net.Listen("tcp", "127.0.0.1:")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func main() {
 						return // fra for løkke
 					}
 					switch msg := string(buf[:n]); msg {
-					case "ping":
+  				        case "ping":
 						_, err = c.Write([]byte("pong"))
 					default:
 						_, err = c.Write(buf[:n])
