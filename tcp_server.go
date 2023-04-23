@@ -5,6 +5,11 @@ import (
 	"log"
 	"net"
 	"sync"
+	"strings"
+	"strconv"
+	"fmt"
+	"errors"
+	"github.com/xBroccoliMaster69x/funtemps/conv"
 	"github.com/xBroccoliMaster69x/is105sem03/mycrypt"
 )
 
@@ -41,9 +46,19 @@ func main() {
 					log.Println("Dekrypter melding: ", string(dekryptertMelding))
 					switch msg := string(dekryptertMelding); msg {
   				        case "ping":
-						_, err = c.Write([]byte("pong"))
+						kryptertMelding := mycrypt.Krypter([]rune("pong"), mycrypt.ALF_SEM03,4)
+						log.Println("Kryptert melding: ", string(kryptertMelding))
+						_, err = c.Write([]byte(string(kryptertMelding)))
 					default:
-						_, err = c.Write(buf[:n])
+						if strings.HasPrefix(string(dekryptertMelding), "Kjevik"){
+							fahrenheitLine, _ := CelsiusToFahrenheitLine(string(dekryptertMelding))
+							kryptertMelding := mycrypt.Krypter([]rune(fahrenheitLine), mycrypt.ALF_SEM03, 4)
+							_, err = c.Write([]byte(string(kryptertMelding)))
+						} else {
+							kryptertMelding := mycrypt.Krypter([]rune(dekryptertMelding), mycrypt.ALF_SEM03, 4)
+							log.Println("kryptert melding: ", string(kryptertMelding))
+							_, err = c.Write([]byte(string(kryptertMelding)))
+						}
 					}
 					if err != nil {
 						if err != io.EOF {
@@ -56,4 +71,33 @@ func main() {
 		}
 	}()
 	wg.Wait()
+}
+func CelsiusToFahrenheitString(celsius string) (string, error) {
+	var fahrFloat float64
+	var err error
+	if celsiusFloat, err := strconv.ParseFloat(celsius, 64); err == nil {
+		fahrFloat = conv.CelsiusToFahrenheit(celsiusFloat)
+	}
+	fahrString := fmt.Sprintf("%.1f", fahrFloat)
+	return fahrString, err
+}
+
+func CelsiusToFahrenheitLine(line string) (string, error) {
+	dividedString := strings.Split(line, ";")
+	var err error
+
+	if len(dividedString) == 4 {
+		if dividedString[3] != "" {
+
+			dividedString[3], err = CelsiusToFahrenheitString(dividedString[3])
+			if err != nil {
+				return "", err
+			}
+		} else {
+			return "Data er basert paa gyldig data (per 18.03.2023) (CC BY 4.0) fra Meteorologisk institutt (MET);endringen er gjort av Alexander Glasdam Andersen;;", nil
+		}
+	} else {
+		return "", errors.New("linje har ikke forventet format")
+	}
+	return strings.Join(dividedString, ";"), nil
 }
